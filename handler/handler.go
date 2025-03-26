@@ -29,7 +29,7 @@ type SocketHandler struct {
 func StartHandler(w http.ResponseWriter, r *http.Request) (*SocketHandler, error) {
 	upgrader := websocket.Upgrader{}
 
-	// TODO: This is bad.
+	// FIX: This is bad. Fix it.
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
 	c, err := upgrader.Upgrade(w, r, nil)

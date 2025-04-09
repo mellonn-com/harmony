@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	// IMPORTANT: Replace 'your_module_path' with your actual Go module path
 )
 
 // TestGetData checks if the Event_data struct marshals correctly to JSON.
@@ -28,7 +27,7 @@ func TestEventData_GetData(t *testing.T) {
 				Time:      12345,
 				Position:  10,
 				Character: "a",
-				Action:    handler.INS, // Use the constant
+				Action:    handler.INS,
 			},
 			expected: `{"t":12345,"p":10,"c":"a","a":0}`,
 		},
@@ -37,8 +36,8 @@ func TestEventData_GetData(t *testing.T) {
 			input: handler.Event_data{
 				Time:      69420,
 				Position:  25,
-				Character: "",          // Character might be empty for delete
-				Action:    handler.DEL, // Use the constant
+				Character: "",
+				Action:    handler.DEL,
 			},
 			expected: `{"t":69420,"p":25,"c":"","a":1}`,
 		},

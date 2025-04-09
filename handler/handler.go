@@ -14,7 +14,7 @@ const (
 	DEL
 )
 
-type event_data struct {
+type Event_data struct {
 	Time      uint32 `json:"t"`
 	Position  uint16 `json:"p"`
 	Character string `json:"c"`
@@ -49,7 +49,7 @@ func (sh *SocketHandler) Notify(message []byte) error {
 	return sh.Socket.WriteMessage(1, message)
 }
 
-func (ed *event_data) GetData() []byte {
+func (ed *Event_data) GetData() []byte {
 	data, err := json.Marshal(ed)
 	if err != nil {
 		log.Panic(err)
@@ -85,7 +85,7 @@ func (sh *SocketHandler) HandleMessage(message []byte) {
 	log.Printf("recv: %s", message)
 
 	// decode incoming message into a struct
-	var json_data event_data
+	var json_data Event_data
 	err := json.Unmarshal(message, &json_data)
 	if err != nil {
 		log.Panic(err)

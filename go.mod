@@ -1,5 +1,5 @@
 module harmony
 
-go 1.21.0
+go 1.23.0
 
-require github.com/gorilla/websocket v1.5.3 // indirect
+require github.com/gorilla/websocket v1.5.3

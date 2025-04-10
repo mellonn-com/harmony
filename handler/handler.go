@@ -3,8 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -23,7 +23,6 @@ type Event_data struct {
 
 type SocketHandler struct {
 	Socket *websocket.Conn
-	mu     sync.Mutex
 }
 
 func StartHandler(w http.ResponseWriter, r *http.Request) (*SocketHandler, error) {
@@ -63,10 +62,10 @@ func (ed *Event_data) GetData() []byte {
 func Serve(w http.ResponseWriter, r *http.Request) {
 	sh, err := StartHandler(w, r)
 	if err != nil {
-		log.Panic(err)
+		slog.Warn(err.Error())
 	}
 
-	log.Println("Received new connection...")
+	slog.Debug("Received new connection...")
 
 	// continuously listen for incoming messages
 	for {
@@ -74,25 +73,29 @@ func Serve(w http.ResponseWriter, r *http.Request) {
 		mt, message, err := sh.Socket.ReadMessage()
 		_ = mt
 		if err != nil {
-			log.Panic(err)
+			switch e := err.(type) {
+			case *websocket.CloseError:
+				slog.Debug("Connection closed...")
+				return
+			default:
+				slog.Warn(e.Error())
+			}
 		}
 
-		go sh.HandleMessage(message)
+		sh.HandleMessage(message)
 	}
 }
 
 func (sh *SocketHandler) HandleMessage(message []byte) {
-	log.Printf("recv: %s", message)
+	slog.Debug("received message", "message", string(message))
 
 	// decode incoming message into a struct
 	var json_data Event_data
 	err := json.Unmarshal(message, &json_data)
 	if err != nil {
-		log.Panic(err)
+		slog.Error(err.Error())
 	}
 
 	// notify client with event for message with count "c"
-	sh.mu.Lock()
 	sh.Notify(json_data.GetData())
-	sh.mu.Unlock()
 }

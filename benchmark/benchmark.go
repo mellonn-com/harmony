@@ -3,7 +3,7 @@ package benchmark
 import (
 	"bytes"
 	"harmony/handler"
-	"log"
+	"log/slog"
 	"net"
 	"sync"
 	"time"
@@ -13,18 +13,31 @@ import (
 
 func StartBenchmark(wsURL string, connections int, messages int) {
 	var wg sync.WaitGroup
+
+	// test with 1 connection and 10 messages, to create a baseline
+	start := time.Now()
+	startConnection(&wg, wsURL, 10)
+	baseline := time.Since(start)
+	slog.Info("baseline done", "result", baseline.Microseconds(), "per_message", baseline.Microseconds()/10)
+
+	// do the actual test
+	start = time.Now()
 	for range connections {
 		go startConnection(&wg, wsURL, messages)
 	}
-
 	wg.Wait()
+
+	result := time.Since(start)
+	nsPerConnection := result.Microseconds() / int64(connections)
+	nsPerMessage := nsPerConnection / int64(messages)
+	slog.Info("benchmark done", "result", result.Seconds(), "per_connection", nsPerConnection, "per_message", nsPerMessage)
 }
 
 func startConnection(wg *sync.WaitGroup, wsURL string, messages int) {
 	wg.Add(1)
 	ws, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
 	if err != nil {
-		log.Fatalf("Failed to dial WebSocket server: %v (response: %v)", err, resp)
+		slog.Error("Failed to dial WebSocket server", "error", err.Error(), "resp", resp)
 	}
 	defer ws.Close()
 
@@ -35,6 +48,7 @@ func startConnection(wg *sync.WaitGroup, wsURL string, messages int) {
 		Action:    handler.INS,
 	}
 	data := event.GetData()
+
 	for range messages {
 		sendMessage(ws, data)
 	}
@@ -43,7 +57,7 @@ func startConnection(wg *sync.WaitGroup, wsURL string, messages int) {
 
 func sendMessage(ws *websocket.Conn, data []byte) {
 	if err := ws.WriteMessage(websocket.TextMessage, data); err != nil {
-		log.Fatalf("Failed to write message to WebSocket: %v", err)
+		slog.Error("Failed to write message to WebSocket", "error", err.Error())
 	}
 
 	// Read the response from the server (should echo the message)
@@ -53,21 +67,21 @@ func sendMessage(ws *websocket.Conn, data []byte) {
 	if err != nil {
 		// Check if it's a timeout error
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			log.Fatalf("Timeout waiting for message from WebSocket server: %v", err)
+			slog.Error("Timeout waiting for message from WebSocket server", "error", err.Error())
 		}
 		// Check for unexpected close error which might happen if server panics
 		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-			log.Fatalf("WebSocket closed unexpectedly: %v", err)
+			slog.Error("WebSocket closed unexpectedly", "error", err.Error())
 		}
-		log.Fatalf("Failed to read message from WebSocket: %v", err)
+		slog.Error("Failed to read message from WebSocket", "error", err.Error())
 	}
 
 	// Verify the message type and content
 	if msgType != websocket.TextMessage { // Your handler writes TextMessage (1)
-		log.Fatalf("Expected message type %d, but got %d", websocket.TextMessage, msgType)
+		slog.Error("Error with received type", "expected", websocket.TextMessage, "received", msgType)
 	}
 
 	if !bytes.Equal(data, receivedBytes) {
-		log.Fatalf("Expected received message '%s', but got '%s'", string(data), string(receivedBytes))
+		slog.Error("Error with received message", "expected", string(data), "received", string(receivedBytes))
 	}
 }

@@ -35,5 +35,5 @@ func startBenchmark() {
 	go startWebsocket()
 	time.Sleep(1 * time.Second)
 
-	benchmark.StartBenchmark("ws://0.0.0.0:8080", 110, 10000)
+	benchmark.StartBenchmark("ws://0.0.0.0:8080", 1000, 10000)
 }

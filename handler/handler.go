@@ -2,9 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"log/slog"
 	"net/http"
+	"unsafe"
 
 	"github.com/gorilla/websocket"
 )
@@ -21,12 +21,17 @@ type Event_data struct {
 	Action    uint8  `json:"a"`
 }
 
+const EVENT_BUFFER_SIZE int = int(unsafe.Sizeof(Event_data{}))
+
 type SocketHandler struct {
 	Socket *websocket.Conn
 }
 
 func StartHandler(w http.ResponseWriter, r *http.Request) (*SocketHandler, error) {
-	upgrader := websocket.Upgrader{}
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  EVENT_BUFFER_SIZE,
+		WriteBufferSize: EVENT_BUFFER_SIZE,
+	}
 
 	// FIX: This is bad. Fix it.
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -51,7 +56,7 @@ func (sh *SocketHandler) Notify(message []byte) error {
 func (ed *Event_data) GetData() []byte {
 	data, err := json.Marshal(ed)
 	if err != nil {
-		log.Panic(err)
+		slog.Error(err.Error())
 	}
 	return data
 }

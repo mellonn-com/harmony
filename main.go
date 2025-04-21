@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"harmony/benchmark"
+	"harmony/cli"
 	"harmony/handler"
 	"log"
 	"log/slog"
@@ -14,8 +15,7 @@ import (
 func main() {
 	log.SetFlags(0)
 
-	startBenchmark()
-	// startWebsocket()
+	cli.StartCli()
 }
 
 func startWebsocket() {

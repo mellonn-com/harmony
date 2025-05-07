@@ -38,34 +38,13 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	switch m.state {
+	case ACTION:
+		return m.actionListUpdate(msg)
 
-		// check which key was pressed
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "enter", " ":
-			fmt.Printf("enter pressed: %d", m.list.Index())
-			switch m.list.Index() {
-			case 0:
-				m.state = RUNNING_SERVER
-			case 1:
-				m.state = SELECT_URL
-			default:
-				m.state = ACTION
-			}
-		}
-
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+	default:
+		return m.defaultUpdate(msg)
 	}
-
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
 }
 
 func (m model) View() string {
@@ -105,4 +84,55 @@ func StartCli() {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
+}
+
+func (m model) defaultUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+
+		// check which key was pressed
+		switch msg.String() {
+		case "ctrl+c":
+			return m, tea.Quit
+		}
+
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
+	}
+
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
+}
+
+func (m model) actionListUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+
+		// check which key was pressed
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+
+		case "enter", " ":
+			fmt.Printf("enter pressed: %d", m.list.Index())
+			switch m.list.Index() {
+			case 0:
+				m.state = RUNNING_SERVER
+			case 1:
+				m.state = SELECT_URL
+			default:
+				m.state = ACTION
+			}
+		}
+
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
+	}
+
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
 }
